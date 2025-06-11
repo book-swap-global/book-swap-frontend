@@ -19,7 +19,6 @@ export default function OTP() {
   });
 
   const {
-    register,
     handleSubmit,
     setValue,
     formState: { errors, isSubmitting },
@@ -27,7 +26,7 @@ export default function OTP() {
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = async (data: { otp: string }) => {
+  const onSubmit = async () => {
     // Mock API call
     await new Promise((res) => setTimeout(res, 1000));
     setVerified(true);

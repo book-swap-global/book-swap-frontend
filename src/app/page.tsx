@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Login from "./components/Login";
-import AuthFooter from "./components/AuthFooter";
 
 export default function Home() {
   return (
