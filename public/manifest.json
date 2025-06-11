@@ -1,0 +1,16 @@
+{
+  "name": "Book Swap App",
+  "short_name": "BookSwap",
+  "description": "A platform to swap books.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "/next.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+} 
