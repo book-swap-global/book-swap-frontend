@@ -3,12 +3,18 @@ import React, { useRef, ChangeEvent, KeyboardEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useAuthStore } from './store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from './store';
+import { setUser, setLoading, setError } from './store/authSlice';
 import AuthCard from './AuthCard';
 import AuthFooter from './AuthFooter';
+import { useVerifyOtpMutation } from './store/authApi';
 
 export default function OTP() {
-  const { mobile, verified, setVerified } = useAuthStore();
+  const dispatch = useDispatch();
+  const mobile = useSelector((state: RootState) => state.auth.user?.phoneNumber || "");
+  const verified = useSelector((state: RootState) => state.auth.verified);
+
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const schema = yup.object().shape({
@@ -22,14 +28,19 @@ export default function OTP() {
     handleSubmit,
     setValue,
     formState: { errors, isSubmitting },
+    watch,
   } = useForm({
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = async () => {
-    // Mock API call
-    await new Promise((res) => setTimeout(res, 1000));
-    setVerified(true);
+  const [verifyOtp, { isLoading, error }] = useVerifyOtpMutation();
+
+  const onSubmit = async (data: { otp: string }) => {
+    const result = await verifyOtp({ code: data.otp });
+    console.log("otp result", result)
+    if (!('error' in result)) {
+      dispatch({ type: 'auth/setVerified', payload: true });
+    }
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
@@ -90,12 +101,15 @@ export default function OTP() {
         {errors.otp && (
           <p className="text-red-500 text-red-500 text-[10px] my-2 text-center">{errors.otp.message as string}</p>
         )}
+        {typeof error === 'object' && error !== null && 'data' in error && (
+          <p className="text-red-500 text-[10px] my-2 text-center">{(error as any).data?.message || 'Failed to verify OTP'}</p>
+        )}
         <button
           type="submit"
            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition text-xs flex items-center justify-center mt-5"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoading}
         >
-          {isSubmitting ? 'Verifying...' : 'Verify OTP'}
+          {isSubmitting || isLoading ? 'Verifying...' : 'Verify OTP'}
         </button>
       </form>
     </AuthCard>

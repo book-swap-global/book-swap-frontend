@@ -4,7 +4,7 @@ import LandingPage from "./components/LandingPage";
 
 export default function Home() {
   // TODO: Replace this with real auth or landing logic
-  const showLanding = true; // Set to true to show landing page for now
+  const showLanding = false; // Set to true to show landing page for now
   return showLanding ? (
     <LandingPage />
   ) : (

@@ -1,5 +1,7 @@
 "use client";
 import { useEffect } from "react";
+import { Provider } from "react-redux";
+import { store } from "./components/store";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -31,6 +33,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <>{children}</>  
+    <Provider store={store}>{children}</Provider>
   );
 } 

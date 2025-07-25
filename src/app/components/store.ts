@@ -1,21 +1,17 @@
-import { create } from 'zustand';
+import { configureStore } from "@reduxjs/toolkit";
+import { useDispatch } from "react-redux";
+import authReducer from "./store/authSlice";
+import { authApi } from "./store/authApi";
 
-interface AuthState {
-  mobile: string;
-  showOTP: boolean;
-  verified: boolean;
-  setMobile: (mobile: string) => void;
-  setShowOTP: (show: boolean) => void;
-  setVerified: (verified: boolean) => void;
-  reset: () => void;
-}
+export const store = configureStore({
+  reducer: {
+    auth: authReducer,
+    [authApi.reducerPath]: authApi.reducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(authApi.middleware),
+});
 
-export const useAuthStore = create<AuthState>((set) => ({
-  mobile: '',
-  showOTP: false,
-  verified: false,
-  setMobile: (mobile) => set({ mobile }),
-  setShowOTP: (showOTP) => set({ showOTP }),
-  setVerified: (verified) => set({ verified }),
-  reset: () => set({ mobile: '', showOTP: false, verified: false }),
-})); 
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+export const useAppDispatch: () => AppDispatch = useDispatch; 

@@ -4,17 +4,26 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import OTP from './OTP';
-import { useAuthStore } from './store';
-import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from './store';
+import { setUser, setLoading, setError, logout, setShowOTP, setVerified } from './store/authSlice';
+import PhoneInput, { isValidPhoneNumber, parsePhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css'; // Import the default styles
 import { ArrowRight } from 'lucide-react'; // Import an icon from lucide-react
 import AuthFooter from './AuthFooter'; // Import the new AuthFooter component
 import AuthCard from './AuthCard';
+import { useSendOtpMutation, useLogoutMutation } from './store/authApi';
 
 export default function Login() {
-  const { mobile, setMobile, showOTP, setShowOTP, reset } = useAuthStore();
+  const dispatch = useDispatch();
+  const mobile = useSelector((state: RootState) => state.auth.user?.phoneNumber || "");
+  const showOTP = useSelector((state: RootState) => state.auth.showOTP);
+  const [sendOtp, { isLoading, error }] = useSendOtpMutation();
 
-  React.useEffect(() => { reset(); }, [reset]);
+  React.useEffect(() => {
+    dispatch(setUser(null));
+    dispatch(setError(null));
+  }, [dispatch]);
 
   const schema = yup.object().shape({
     mobile: yup
@@ -37,10 +46,28 @@ export default function Login() {
   });
 
   const onSubmit = async (data: { mobile: string }) => {
-    setMobile(data.mobile);
-    // Mock API call
-    await new Promise((res) => setTimeout(res, 1000));
-    setShowOTP(true);
+   console.log(data)
+    dispatch(setUser({ phoneNumber: data.mobile }));
+    // Ensure E.164 format
+    let phoneE164 = data.mobile;
+    try {
+      const parsed = parsePhoneNumber(data.mobile || '');
+      if (parsed) {
+        phoneE164 = parsed.number;
+      }
+    } catch (e) {
+      // fallback: use as is
+    }
+    if (!phoneE164.startsWith('+')) {
+      // Show error if not E.164
+      alert('Please enter a valid phone number with country code (e.g. +8190  12345678)');
+      return;
+    }
+    const result = await sendOtp({ phone: phoneE164 });
+    console.log(result)
+    if (!('error' in result)) {
+      dispatch({ type: 'auth/setShowOTP', payload: true });
+    }
   };
 
   if (showOTP) return <OTP />;
@@ -60,7 +87,7 @@ export default function Login() {
               <PhoneInput
                 value={value}
                 onChange={onChange}
-                defaultCountry="JP"
+                defaultCountry="TH"
                 className="w-full px-3 py-2 border border-gray-200 rounded-md phone-input-no-focus "
               />
             )}
@@ -69,12 +96,15 @@ export default function Login() {
         {errors.mobile && (
           <p className="text-red-500 text-[10px] mb-2">{(errors.mobile.message as string)}</p>
         )}
+        {typeof error === 'object' && error !== null && 'data' in error && (
+          <p className="text-red-500 text-[10px] mb-2">{(error as any).data?.message || 'Failed to send OTP'}</p>
+        )}
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition text-xs flex items-center justify-center"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoading}
         >
-          {isSubmitting ? (
+          {isSubmitting || isLoading ? (
             'Sending OTP...'
           ) : (
             <>
@@ -82,10 +112,32 @@ export default function Login() {
             </>
           )}
         </button>
+        <div id="recaptcha-container" />
       </form>
+      {/* Logout Button for demonstration */}
+      <LogoutButton />
     </AuthCard>
           <AuthFooter text="Don't have an account?" linkText="Sign up" />
     </>
    
+  );
+} 
+
+function LogoutButton() {
+  const [logoutApi, { isLoading }] = useLogoutMutation();
+  const dispatch = useDispatch();
+  const handleLogout = async () => {
+    await logoutApi();
+    dispatch(logout());
+  };
+  return (
+    <button
+      type="button"
+      className="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300 transition text-xs"
+      onClick={handleLogout}
+      disabled={isLoading}
+    >
+      {isLoading ? 'Logging out...' : 'Logout'}
+    </button>
   );
 } 
